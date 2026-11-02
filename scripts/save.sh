@@ -109,7 +109,7 @@ pane_full_command() {
 	local pane_pid="$1"
 	local strategy_file="$(_save_command_strategy_file)"
 	# execute strategy script to get pane full command
-	$strategy_file "$pane_pid"
+	"$strategy_file" "$pane_pid"
 }
 
 number_nonempty_lines_on_screen() {
@@ -229,10 +229,14 @@ dump_pane_contents() {
 remove_old_backups() {
 	# remove resurrect files older than 30 days (default), but keep at least 5 copies of backup.
 	local delete_after="$(get_tmux_option "$delete_backup_after_option" "$default_delete_backup_after")"
-	local -a files
-	files=($(ls -t $(resurrect_dir)/${RESURRECT_FILE_PREFIX}_*.${RESURRECT_FILE_EXTENSION} | tail -n +6))
-	[[ ${#files[@]} -eq 0 ]] ||
-		find "${files[@]}" -type f -mtime "+${delete_after}" -exec rm -v "{}" \; > /dev/null
+	local file index=0
+	# Timestamped filenames sort chronologically; keep the five newest backups.
+	local -a files=("$(resurrect_dir)/${RESURRECT_FILE_PREFIX}_"*."${RESURRECT_FILE_EXTENSION}")
+	for ((index=${#files[@]}-6; index>=0; index--)); do
+		file="${files[index]}"
+		[ -f "$file" ] || continue
+		find "$file" -type f -mtime "+${delete_after}" -exec rm -f -- "{}" \;
+	done
 }
 
 save_all() {

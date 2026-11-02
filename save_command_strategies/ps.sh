@@ -12,9 +12,7 @@ exit_safely_if_empty_ppid() {
 
 full_command() {
 	ps -ao "ppid,args" |
-		sed "s/^ *//" |
-		grep "^${PANE_PID}" |
-		cut -d' ' -f2-
+		awk -v pid="$PANE_PID" '$1 == pid { sub(/^[[:space:]]*[0-9]+[[:space:]]+/, ""); print }'
 }
 
 main() {
